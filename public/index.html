@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Otimizador de Anúncios - Onicanal</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+
+  <style>
+    body { 
+      font-family: 'Poppins', sans-serif; 
+      margin: 0; 
+      padding: 0; 
+      background-color: #fff; 
+    }
+
+    header { 
+      background-color: #fff; 
+      text-align: center; 
+      padding: 0; 
+      border-bottom: 3px solid #ff5722; 
+    }
+
+    header img { 
+      width: 100%; 
+      height: auto; 
+      margin-bottom: 0; 
+    }
+
+    header h1 { 
+      margin: 10px 0 0; 
+      font-size: 2rem; 
+      color: #333; 
+    }
+
+    header p { 
+      margin-top: 5px; 
+      font-size: 1.1rem; 
+      color: #555; 
+    }
+
+    main { 
+      padding: 20px; 
+      max-width: 900px; 
+      margin: auto; 
+      background: #fff; 
+    }
+
+    form { 
+      display: flex; 
+      flex-direction: column; 
+      gap: 15px; 
+      margin-top: 20px; 
+    }
+
+    input, textarea, button, a.button-download { 
+      padding: 15px; 
+      font-size: 16px; 
+      border: 1px solid #ccc; 
+      border-radius: 8px; 
+    }
+
+    button, a.button-download { 
+      background-color: #ff5722; 
+      color: white; 
+      font-weight: bold; 
+      border: none; 
+      cursor: pointer; 
+      text-align: center; 
+      transition: background 0.3s; 
+      text-decoration: none; 
+    }
+
+    button:hover, a.button-download:hover { 
+      background-color: #e64a19; 
+    }
+
+    .section { 
+      margin-top: 50px; 
+    }
+
+    .section h2 { 
+      color: #ff5722; 
+      font-size: 1.8rem; 
+      border-left: 5px solid #ff5722; 
+      padding-left: 10px; 
+    }
+
+    .results { 
+      background-color: #f9f9f9; 
+      padding: 20px; 
+      border-radius: 10px; 
+      margin-top: 20px; 
+      display: flex; 
+      flex-direction: column; 
+      gap: 20px; 
+    }
+
+    /* 🔥 Correções para espaçamento no resultado 🔥 */
+    .results > * {
+      margin-top: 0;
+      margin-bottom: 12px;
+    }
+
+    .results h2 {
+      margin-top: 30px;
+      margin-bottom: 10px;
+      font-size: 1.5rem;
+      color: #e64a19;
+    }
+
+    .results p {
+      margin-top: 0;
+      margin-bottom: 8px;
+    }
+
+    .results ul {
+      margin-top: 0;
+      margin-bottom: 8px;
+      padding-left: 20px;
+    }
+
+    .results li {
+      margin-bottom: 4px;
+    }
+
+    .results div {
+      background: #fff;
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+    }
+
+    .results div strong { 
+      color: #e64a19; 
+    }
+
+    #spinner { 
+      display: none; 
+      text-align: center; 
+      margin-top: 20px; 
+    }
+
+    footer { 
+      text-align: center; 
+      padding: 20px; 
+      font-size: 0.9rem; 
+      color: #777; 
+      margin-top: 50px; 
+    }
+
+    .download-section { 
+      margin-top: 30px; 
+      text-align: center; 
+      display: none; 
+    }
+
+    .thank-you { 
+      text-align: center; 
+      margin-top: 50px; 
+      padding: 30px; 
+      background-color: #d4edda; 
+      border-radius: 10px; 
+      display: none; 
+    }
+
+    .thank-you h2 { 
+      color: #155724; 
+    }
+
+    .thank-you p { 
+      color: #155724; 
+      font-size: 1.1rem; 
+    }
+  </style>
+
+</head>
+
+<body>
+  <header>
+    <img src="https://yt3.googleusercontent.com/oyoWCH7tEoR6Jy2HarZ2XvHnbmrh1vEdaPugnUBgyq-JKuA6gxU3csSoUYA2ur78Obs4YZ4AzQ=w1060-fcrop64=1,00005a57ffffa5a8-k-c0xffffffff-no-nd-rj" alt="Logo Onicanal">
+    <h1>Otimize Seus Anúncios e Venda Muito Mais!</h1>
+    <p>Analise seus concorrentes e receba um anúncio perfeito com IA.</p>
+  </header>
+
+  <main>
+    <section>
+      <h2>Comece sua Análise Gratuita</h2>
+      <form id="lead-form">
+        <input type="text" id="nome" placeholder="Nome Completo" required>
+        <input type="email" id="email" placeholder="E-mail" required>
+        <input type="tel" id="telefone" placeholder="Telefone (WhatsApp)" required>
+        <button type="submit">Começar Análise</button>
+      </form>
+    </section>
+
+    <section class="section">
+      <h2>Informe os Links dos Anúncios</h2>
+      <form id="anuncios-form">
+        <input type="url" placeholder="Link do Anúncio 1" required>
+        <input type="url" placeholder="Link do Anúncio 2">
+        <input type="url" placeholder="Link do Anúncio 3">
+        <input type="url" placeholder="Link do Anúncio 4">
+        <input type="url" placeholder="Link do Anúncio 5">
+        <button type="submit">Analisar Agora</button>
+      </form>
+    </section>
+
+    <div id="spinner">
+      <img src="https://i.gifer.com/ZZ5H.gif" width="100" alt="Carregando...">
+      <p>Gerando seu relatório completo, aguarde até 1 minuto...</p>
+    </div>
+
+    <section class="section">
+      <h2>Resultado da Análise</h2>
+      <div class="results" id="resultado-final"></div>
+    </section>
+
+    <section class="download-section" id="download-section">
+      <h2>Relatório Pronto!</h2>
+      <p>Baixe seu relatório completo em PDF:</p>
+      <a href="#" class="button-download" id="download-pdf" target="_blank">Baixar Relatório em PDF</a>
+    </section>
+
+    <section class="thank-you" id="thank-you">
+      <h2>Obrigado por utilizar o Otimizador Onicanal! 🎉</h2>
+      <p>Seu relatório está a caminho. Se precisar de ajuda para aplicar as melhorias sugeridas ou quiser turbinar ainda mais seus resultados, fale com nossa equipe!</p>
+      <p><a href="https://chat.whatsapp.com/L9Erwa6MPHFF3HibecnoJq" class="button-download" target="_blank">Entrar no Grupo de Suporte</a></p>
+    </section>
+  </main>
+
+  <footer>
+    &copy; 2025 Onicanal. Todos os direitos reservados.
+  </footer>
+
+  <script>
+    window.onload = function() {
+      document.getElementById('anuncios-form').style.display = 'none';
+    };
+    
+    const leadForm = document.getElementById('lead-form');
+    const anunciosForm = document.getElementById('anuncios-form');
+    const resultadoFinal = document.getElementById('resultado-final');
+    
+    leadForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const nome = document.getElementById('nome').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const telefone = document.getElementById('telefone').value.trim();
+    
+      if (nome && email && telefone) {
+        try {
+          // Envia os dados para o Google Sheets via Sheet.best
+          await fetch('https://api.sheetbest.com/sheets/18f7937c-c3ce-4535-bb60-d5ce73f0c6cb', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              nome: nome,
+              email: email,
+              telefone: telefone
+            })
+          });
+    
+          // Agora libera o formulário de anúncios
+          anunciosForm.style.display = 'flex';
+          alert('Dados recebidos com sucesso! Agora informe os links dos anúncios.');
+          leadForm.reset();
+        } catch (error) {
+          console.error('Erro ao salvar lead:', error);
+          alert('Erro ao salvar seus dados. Tente novamente.');
+        }
+      } else {
+        alert('Por favor, preencha todos os campos!');
+      }
+    });
+    
+    anunciosForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+    
+      const inputs = document.querySelectorAll('#anuncios-form input[type="url"]');
+      const anuncios = [];
+    
+      inputs.forEach(input => {
+        if (input.value.trim()) {
+          anuncios.push(input.value.trim());
+        }
+      });
+    
+      if (anuncios.length === 0) {
+        alert('Por favor, preencha pelo menos 1 link de anúncio.');
+        return;
+      }
+    
+      document.getElementById('spinner').style.display = 'block';
+      resultadoFinal.innerHTML = '';
+    
+      try {
+        const response = await fetch('/analisar-anuncios', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ anuncios })
+        });
+    
+        const data = await response.json();
+    
+        document.getElementById('spinner').style.display = 'none';
+        resultadoFinal.innerHTML = data.resultado;
+    
+        if (data.pdfPath) {
+          mostrarDownload(data.pdfPath);
+        }
+      } catch (err) {
+        console.error(err);
+        document.getElementById('spinner').style.display = 'none';
+        resultadoFinal.innerHTML = '<p>Erro ao gerar análise. Tente novamente.</p>';
+      }
+    });
+    
+    function mostrarDownload(pdfLink) {
+      document.getElementById('download-pdf').href = pdfLink;
+      document.getElementById('download-section').style.display = 'block';
+    }
+    
+    function dispararConfete() {
+      confetti({
+        particleCount: 150,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
+    }
+    
+    document.getElementById('download-pdf').addEventListener('click', function() {
+      setTimeout(() => {
+        document.getElementById('thank-you').style.display = 'block';
+        window.scrollTo(0, document.body.scrollHeight);
+        dispararConfete();
+      }, 1000);
+    });
+    </script>
+</script>
+
+</body>
+</html>

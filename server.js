@@ -13,11 +13,24 @@ app.use(bodyParser.json());
 app.use(express.static('public'));
 
 // Função para gerar o Relatório PDF
-
 async function gerarRelatorioPDF(content) {
-    const browser = await puppeteer.launch({ headless: "new", args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+    const browser = await puppeteer.launch({
+      headless: "new",
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+        '--no-zygote',
+        '--single-process',
+        '--disable-gpu'
+      ]
+    });
+  
     const page = await browser.newPage();
   
+    // Converte o conteúdo Markdown para HTML REAL
     const htmlContent = marked(content);
   
     await page.setContent(`
@@ -26,8 +39,9 @@ async function gerarRelatorioPDF(content) {
         <style>
   body {
     font-family: 'Poppins', sans-serif;
+    padding: 60px 70px;
     color: #333;
-    line-height: 1.7;
+    line-height: 1.6;
   }
   h1 {
     color: #ff5722;
@@ -71,19 +85,7 @@ async function gerarRelatorioPDF(content) {
     const filename = `relatorio-${Date.now()}.pdf`;
     const filepath = path.join(dir, filename);
   
-    // AQUI: Aplicando margens reais no PDF gerado
-    await page.pdf({ 
-      path: filepath, 
-      format: 'A4', 
-      printBackground: true,
-      margin: {
-        top: '80px',
-        bottom: '80px',
-        left: '70px',
-        right: '70px'
-      }
-    });
-  
+    await page.pdf({ path: filepath, format: 'A4', printBackground: true });
     await browser.close();
   
     return `/relatorios/${filename}`;
@@ -115,8 +117,9 @@ Monte uma descrição ultra completa do produto, incluindo:
 - Aplicações
 - Compatibilidades
 - Vantagens técnicas
-- Materiais usado
-- Liste os principais diferenciais do produtos
+- Materiais
+- Dimensões
+- Principais diferenciais do produtos
 
 4. Análise de Imagens e Sugestões:
 Avalie as imagens e sugira 5 melhorias práticas.

@@ -1,7 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-core');
 const bodyParser = require('body-parser');
 const path = require('path');
 const fs = require('fs');
@@ -15,7 +15,7 @@ app.use(express.static('public'));
 // Função para gerar o Relatório PDF
 async function gerarRelatorioPDF(content) {
     const browser = await puppeteer.launch({
-      headless: "new",
+      headless: true,
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
@@ -25,43 +25,42 @@ async function gerarRelatorioPDF(content) {
         '--no-zygote',
         '--single-process',
         '--disable-gpu'
-      ]
+      ],
+      executablePath: process.env.CHROME_BINARY_PATH || '/usr/bin/google-chrome'
     });
-  
+
     const page = await browser.newPage();
-  
-    // Converte o conteúdo Markdown para HTML REAL
     const htmlContent = marked(content);
-  
+
     await page.setContent(`
       <html>
       <head>
         <style>
-  body {
-    font-family: 'Poppins', sans-serif;
-    padding: 60px 70px;
-    color: #333;
-    line-height: 1.6;
-  }
-  h1 {
-    color: #ff5722;
-    margin-bottom: 30px;
-    text-align: center;
-  }
-  h2 {
-    color: #e64a19;
-    margin-top: 40px;
-    margin-bottom: 20px;
-  }
-  p, ul, li {
-    margin-bottom: 12px;
-  }
-  footer {
-    font-size: 10px;
-    color: #888;
-    text-align: center;
-    margin-top: 60px;
-  }
+          body {
+            font-family: 'Poppins', sans-serif;
+            padding: 60px 70px;
+            color: #333;
+            line-height: 1.6;
+          }
+          h1 {
+            color: #ff5722;
+            margin-bottom: 30px;
+            text-align: center;
+          }
+          h2 {
+            color: #e64a19;
+            margin-top: 40px;
+            margin-bottom: 20px;
+          }
+          p, ul, li {
+            margin-bottom: 12px;
+          }
+          footer {
+            font-size: 10px;
+            color: #888;
+            text-align: center;
+            margin-top: 60px;
+          }
         </style>
       </head>
       <body>
@@ -69,27 +68,25 @@ async function gerarRelatorioPDF(content) {
           <img src="https://yt3.googleusercontent.com/oyoWCH7tEoR6Jy2HarZ2XvHnbmrh1vEdaPugnUBgyq-JKuA6gxU3csSoUYA2ur78Obs4YZ4AzQ=w1060-fcrop64=1,00005a57ffffa5a8-k-c0xffffffff-no-nd-rj" style="width: 100%; margin-bottom: 20px;">
           <h1>Relatório de Otimização de Anúncios - Onicanal</h1>
         </div>
-  
         ${htmlContent}
-  
         <footer>Relatório gerado automaticamente pelo sistema Onicanal</footer>
       </body>
       </html>
     `);
-  
+
     const dir = path.join(__dirname, 'public', 'relatorios');
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
-  
+
     const filename = `relatorio-${Date.now()}.pdf`;
     const filepath = path.join(dir, filename);
-  
+
     await page.pdf({ path: filepath, format: 'A4', printBackground: true });
     await browser.close();
-  
+
     return `/relatorios/${filename}`;
-  }
+}
 
 // Rota para análise dos anúncios
 app.post('/analisar-anuncios', async (req, res) => {
@@ -104,8 +101,8 @@ ${anuncios.join('\n')}
 Crie um relatório premium com as seguintes seções:
 
 1. Títulos Otimizados:
-Crie 5 opções de títulos com no máximo 60 caracteres cada.  
-Use termos pesquisáveis como tipo de produto, material, aplicação e medidas.  
+Crie 5 opções de títulos com no máximo 60 caracteres cada.
+Use termos pesquisáveis como tipo de produto, material, aplicação e medidas.
 NÃO use adjetivos genéricos como "eficiente", "prático", "seguro", "moderno", "inclusivo".
 
 2. Palavras-chave:
@@ -119,7 +116,7 @@ Monte uma descrição ultra completa do produto, incluindo:
 - Vantagens técnicas
 - Materiais
 - Dimensões
-- Principais diferenciais do produtos
+- Principais diferenciais do produto
 
 4. Análise de Imagens e Sugestões:
 Avalie as imagens e sugira 5 melhorias práticas.
@@ -159,7 +156,7 @@ Estilo de escrita:
 
     res.json({ 
       resultado: htmlContent,
-      pdfPath: pdfPath.replace('public', '') 
+      pdfPath: pdfPath.replace('public', '')
     });
   } catch (error) {
     console.error('Erro completo:', error.response ? error.response.data : error.message);
@@ -167,7 +164,6 @@ Estilo de escrita:
   }
 });
 
-// Fazendo o servidor rodar
 app.listen(PORT, () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
 });

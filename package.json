@@ -1,0 +1,29 @@
+{
+  "name": "otimizador-onicanal",
+  "version": "1.0.0",
+  "description": "Agente Otimizador de Anúncios do Onicanal",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [
+    "ecommerce",
+    "marketplace",
+    "otimizador",
+    "chatgpt",
+    "onicanal",
+    "inteligência artificial",
+    "mercado livre",
+    "automação de anúncios"
+  ],
+  "author": "Bruno Gontijo - Onicanal",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.7.2",
+    "body-parser": "^1.20.2",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "marked": "^9.0.3",
+    "puppeteer": "^20.8.1"
+  }
+}

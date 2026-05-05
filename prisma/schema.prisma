@@ -1,0 +1,233 @@
+// Onicanal — schema multiempresa
+// Documentação: https://www.prisma.io/docs
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// =====================================================================
+// Autenticação
+// =====================================================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  name          String?
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  sessions Session[]
+  accounts Account[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// =====================================================================
+// Empresas (multiempresa) — cada CNPJ = 1 Empresa
+// =====================================================================
+
+model Empresa {
+  id                String    @id @default(cuid())
+  nome              String
+  apelido           String?
+  cnpj              String?
+  cor               String    @default("#FF6B35") // cor de identificação nos gráficos
+  ativo             Boolean   @default(true)
+
+  // Token Tiny v3 (Olist) criptografado em AES-256-GCM
+  tinyTokenCipher   String?
+  tinyTokenIv       String?
+  tinyTokenTag      String?
+
+  ultimoSyncProdutos DateTime?
+  ultimoSyncPedidos  DateTime?
+  ultimoSyncEstoque  DateTime?
+  primeiroSyncOk     Boolean   @default(false)
+
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  produtos    Produto[]
+  pedidos     Pedido[]
+  movimentos  MovimentoEstoque[]
+  syncJobs    SyncJob[]
+}
+
+// =====================================================================
+// Produtos
+// =====================================================================
+
+model Produto {
+  id            String   @id @default(cuid())
+  empresaId     String
+  empresa       Empresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  tinyId        String   // ID do produto no Tiny
+  sku           String
+  nome          String
+  categoria     String?
+  marca         String?
+  ncm           String?
+  unidade       String?
+  precoVenda    Decimal? @db.Decimal(12, 2)
+  precoCusto    Decimal? @db.Decimal(12, 2)
+  estoqueAtual  Int?     @default(0)
+  estoqueMinimo Int?     @default(0)
+  imagemUrl     String?
+  ativo         Boolean  @default(true)
+  raw           Json?    // dump bruto da resposta Tiny p/ depuração
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  itensPedido ItemPedido[]
+  movimentos  MovimentoEstoque[]
+
+  @@unique([empresaId, tinyId])
+  @@index([empresaId, sku])
+  @@index([empresaId, categoria])
+}
+
+// =====================================================================
+// Pedidos e itens
+// =====================================================================
+
+model Pedido {
+  id              String    @id @default(cuid())
+  empresaId       String
+  empresa         Empresa   @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  tinyId          String
+  numero          String
+  numeroEcommerce String?
+  canal           String?   // ex.: mercadolivre, shopee, amazon, site
+  situacao        String?   // emitido, aprovado, faturado, cancelado, entregue
+  dataPedido      DateTime
+  dataAprovacao   DateTime?
+
+  cliente         String?
+  documentoCli    String?
+  uf              String?
+  cidade          String?
+
+  valorTotal      Decimal   @db.Decimal(12, 2)
+  valorFrete      Decimal?  @db.Decimal(12, 2)
+  valorDesconto   Decimal?  @db.Decimal(12, 2)
+  custoTotal      Decimal?  @db.Decimal(12, 2)
+  margemBruta     Decimal?  @db.Decimal(12, 2)
+
+  raw             Json?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  itens ItemPedido[]
+
+  @@unique([empresaId, tinyId])
+  @@index([empresaId, dataPedido])
+  @@index([empresaId, canal])
+  @@index([empresaId, situacao])
+}
+
+model ItemPedido {
+  id          String   @id @default(cuid())
+  pedidoId    String
+  pedido      Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  produtoId   String?
+  produto     Produto? @relation(fields: [produtoId], references: [id])
+
+  sku         String
+  descricao   String
+  quantidade  Decimal  @db.Decimal(12, 3)
+  valorUnit   Decimal  @db.Decimal(12, 2)
+  valorTotal  Decimal  @db.Decimal(12, 2)
+  desconto    Decimal? @db.Decimal(12, 2)
+  custoUnit   Decimal? @db.Decimal(12, 2)
+  custoTotal  Decimal? @db.Decimal(12, 2)
+
+  @@index([pedidoId])
+  @@index([produtoId])
+}
+
+// =====================================================================
+// Estoque
+// =====================================================================
+
+model MovimentoEstoque {
+  id         String   @id @default(cuid())
+  empresaId  String
+  empresa    Empresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  produtoId  String
+  produto    Produto  @relation(fields: [produtoId], references: [id], onDelete: Cascade)
+
+  data       DateTime
+  tipo       String   // entrada | saida | balanco
+  quantidade Decimal  @db.Decimal(12, 3)
+  observacao String?
+
+  @@index([empresaId, data])
+  @@index([produtoId, data])
+}
+
+// =====================================================================
+// Histórico de sincronização
+// =====================================================================
+
+model SyncJob {
+  id                   String    @id @default(cuid())
+  empresaId            String
+  empresa              Empresa   @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  tipo                 String    // produtos | pedidos | estoque
+  status               String    // pending | running | success | error
+  iniciadoEm           DateTime  @default(now())
+  finalizadoEm         DateTime?
+  totalRegistros       Int?
+  registrosProcessados Int?      @default(0)
+  erro                 String?   @db.Text
+  detalhes             Json?
+
+  @@index([empresaId, tipo, iniciadoEm])
+}

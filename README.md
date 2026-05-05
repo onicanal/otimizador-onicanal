@@ -81,26 +81,14 @@ Vercel (Next.js 14 App Router)
 
 4. Clique em **Deploy**.
 
-### 4. Crie as tabelas e seu usuário
+### 4. (Tudo automático) Tabelas e usuário admin
 
-Após o primeiro deploy, abra o terminal local **uma vez** para rodar a
-inicialização do banco:
+Você **não precisa abrir terminal nenhum**. Durante o build do Vercel:
 
-```bash
-git clone git@github.com:onicanal/otimizador-onicanal.git
-cd otimizador-onicanal
-npm install
-cp .env.example .env.local
-# preencha .env.local com os MESMOS valores cadastrados na Vercel
-
-# cria/atualiza as tabelas no Supabase
-npx prisma db push
-
-# cria seu usuário admin com base em ADMIN_EMAIL / ADMIN_PASSWORD
-npm run seed
-```
-
-> Não precisa rodar `db push` toda vez — só quando o `schema.prisma` mudar.
+- O Prisma cria/atualiza as tabelas no Supabase automaticamente.
+- No seu **primeiro login**, se você usar exatamente `ADMIN_EMAIL` e
+  `ADMIN_PASSWORD` definidos no Vercel, o sistema cria seu usuário admin
+  na hora.
 
 ### 5. Acesse o site
 

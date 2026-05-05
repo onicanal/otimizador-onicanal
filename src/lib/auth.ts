@@ -24,8 +24,29 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!parsed.success) return null;
         const { email, password } = parsed.data;
 
-        const user = await prisma.user.findUnique({ where: { email } });
-        if (!user) return null;
+        let user = await prisma.user.findUnique({ where: { email } });
+
+        // Bootstrap automático: na primeira vez, se as credenciais batem com
+        // ADMIN_EMAIL / ADMIN_PASSWORD do ambiente, cria o usuário admin.
+        if (!user) {
+          const adminEmail = process.env.ADMIN_EMAIL;
+          const adminPassword = process.env.ADMIN_PASSWORD;
+          const adminName = process.env.ADMIN_NAME ?? "Admin";
+
+          if (
+            adminEmail &&
+            adminPassword &&
+            email === adminEmail &&
+            password === adminPassword
+          ) {
+            const passwordHash = await bcrypt.hash(adminPassword, 12);
+            user = await prisma.user.create({
+              data: { email: adminEmail, passwordHash, name: adminName },
+            });
+          } else {
+            return null;
+          }
+        }
 
         const ok = await bcrypt.compare(password, user.passwordHash);
         if (!ok) return null;

@@ -2,12 +2,13 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, KeyRound, Pencil, Plus, Trash2 } from "lucide-react";
+import { Building2, KeyRound, Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 import { EmpresaDialog, type EmpresaFormValues } from "@/components/empresas/empresa-dialog";
+import { SyncDialog } from "@/components/empresas/sync-dialog";
 import { deleteEmpresa, removeEmpresaToken } from "@/server/empresas-actions";
 
 export interface EmpresaItem {
@@ -33,6 +34,7 @@ export function EmpresasList({ empresas }: Props) {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<EmpresaFormValues | undefined>(undefined);
+  const [syncing, setSyncing] = useState<{ id: string; nome: string } | null>(null);
 
   function openCreate() {
     setEditing(undefined);
@@ -158,6 +160,14 @@ export function EmpresasList({ empresas }: Props) {
                 </dl>
 
                 <div className="flex flex-wrap gap-2 pt-2">
+                  {e.hasToken && (
+                    <Button
+                      size="sm"
+                      onClick={() => setSyncing({ id: e.id, nome: e.apelido || e.nome })}
+                    >
+                      <RefreshCw className="h-3.5 w-3.5" /> Sincronizar
+                    </Button>
+                  )}
                   <Button size="sm" variant="outline" onClick={() => openEdit(e)}>
                     <Pencil className="h-3.5 w-3.5" /> Editar
                   </Button>
@@ -187,6 +197,14 @@ export function EmpresasList({ empresas }: Props) {
 
       {dialogOpen && (
         <EmpresaDialog open={dialogOpen} onOpenChange={setDialogOpen} empresa={editing} />
+      )}
+      {syncing && (
+        <SyncDialog
+          open={!!syncing}
+          onOpenChange={(o) => !o && setSyncing(null)}
+          empresaId={syncing.id}
+          empresaNome={syncing.nome}
+        />
       )}
     </>
   );

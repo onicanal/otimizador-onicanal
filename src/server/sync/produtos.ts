@@ -5,8 +5,14 @@ import {
   tinyListarProdutos,
   tinyObterProduto,
   tinyObterEstoque,
+  parseTinyNumber,
   type TinyProdutoListItem,
 } from "@/lib/tiny";
+
+function toDecimal(v: unknown): Prisma.Decimal | null {
+  const n = parseTinyNumber(v);
+  return n === null ? null : new Prisma.Decimal(n);
+}
 
 // Tempo máximo (ms) que cada chunk pode rodar antes de parar e devolver controle.
 // Vercel Hobby: 60s — deixamos 8s de folga para teardown/persistência.
@@ -63,12 +69,8 @@ async function upsertProdutosLista(empresaId: string, items: TinyProdutoListItem
     const tinyId = String(p.id);
     ids.push(tinyId);
 
-    const precoVenda = p.preco ? new Prisma.Decimal(p.preco.replace(",", ".")) : null;
-    const precoCusto = p.preco_custo
-      ? new Prisma.Decimal(p.preco_custo.replace(",", "."))
-      : p.preco_custo_medio
-      ? new Prisma.Decimal(p.preco_custo_medio.replace(",", "."))
-      : null;
+    const precoVenda = toDecimal(p.preco);
+    const precoCusto = toDecimal(p.preco_custo) ?? toDecimal(p.preco_custo_medio);
 
     await prisma.produto.upsert({
       where: { empresaId_tinyId: { empresaId, tinyId } },
@@ -110,15 +112,10 @@ async function buscarDetalheEEstoque(token: string, empresaId: string, tinyId: s
     if (det.categoria) data.categoria = det.categoria;
     if (det.marca) data.marca = det.marca;
     if (det.ncm) data.ncm = det.ncm;
-    if (det.preco_custo) {
-      data.precoCusto = new Prisma.Decimal(det.preco_custo.replace(",", "."));
-    } else if (det.preco_custo_medio) {
-      data.precoCusto = new Prisma.Decimal(det.preco_custo_medio.replace(",", "."));
-    }
-    if (det.estoque_minimo) {
-      const min = Number(det.estoque_minimo.replace(",", "."));
-      if (!Number.isNaN(min)) data.estoqueMinimo = Math.round(min);
-    }
+    const custo = toDecimal(det.preco_custo) ?? toDecimal(det.preco_custo_medio);
+    if (custo) data.precoCusto = custo;
+    const min = parseTinyNumber(det.estoque_minimo);
+    if (min !== null) data.estoqueMinimo = Math.round(min);
     if (det.anexos && det.anexos.length > 0 && det.anexos[0].anexo?.url) {
       data.imagemUrl = det.anexos[0].anexo.url;
     }

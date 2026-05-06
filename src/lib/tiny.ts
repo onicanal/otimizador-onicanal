@@ -278,3 +278,23 @@ export function fromTinyDate(s: string | undefined | null): Date | null {
   const [, dd, mm, yyyy] = m;
   return new Date(`${yyyy}-${mm}-${dd}T00:00:00`);
 }
+
+/**
+ * Converte um valor numérico vindo do Tiny (que pode ser string em formato BR,
+ * string em formato US, número ou null) para number JS.
+ * Exemplos: "1.234,56" -> 1234.56 ; "10,50" -> 10.5 ; "10.50" -> 10.5 ;
+ *           10.5 -> 10.5 ; null -> null
+ */
+export function parseTinyNumber(v: unknown): number | null {
+  if (v === null || v === undefined || v === "") return null;
+  if (typeof v === "number") return Number.isFinite(v) ? v : null;
+  const s = String(v).trim();
+  if (!s) return null;
+  // Se tem vírgula, formato BR: pontos são milhar, vírgula é decimal
+  // Senão, formato US (ou número simples): apenas converte
+  const normalized = s.includes(",")
+    ? s.replace(/\./g, "").replace(",", ".")
+    : s;
+  const n = Number(normalized);
+  return Number.isNaN(n) ? null : n;
+}

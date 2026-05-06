@@ -6,6 +6,7 @@ import {
   tinyObterPedido,
   toTinyDate,
   fromTinyDate,
+  parseTinyNumber,
   type TinyPedidoListItem,
   type TinyPedidoDetalhe,
 } from "@/lib/tiny";
@@ -57,11 +58,9 @@ function decryptToken(empresa: { tinyTokenCipher: string | null; tinyTokenIv: st
   });
 }
 
-function parseDecimal(v: string | undefined | null): Prisma.Decimal | null {
-  if (!v) return null;
-  const n = Number(String(v).replace(/\./g, "").replace(",", "."));
-  if (Number.isNaN(n)) return null;
-  return new Prisma.Decimal(n);
+function parseDecimal(v: unknown): Prisma.Decimal | null {
+  const n = parseTinyNumber(v);
+  return n === null ? null : new Prisma.Decimal(n);
 }
 
 function detectarCanal(pedido: { ecommerce?: { nome?: string; nomeMarketplace?: string }; numero_ecommerce?: string }): string | null {

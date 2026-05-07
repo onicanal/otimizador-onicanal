@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { decryptString } from "@/lib/crypto";
+import { detectarCanal } from "@/lib/canal";
 import {
   tinyListarPedidos,
   tinyObterPedido,
@@ -63,20 +64,11 @@ function parseDecimal(v: unknown): Prisma.Decimal | null {
   return n === null ? null : new Prisma.Decimal(n);
 }
 
-function detectarCanal(pedido: { ecommerce?: { nome?: string; nomeMarketplace?: string }; numero_ecommerce?: string }): string | null {
-  const nome = pedido.ecommerce?.nomeMarketplace ?? pedido.ecommerce?.nome;
-  if (!nome) {
-    return pedido.numero_ecommerce ? "outro" : null;
-  }
-  const lower = nome.toLowerCase();
-  if (lower.includes("mercado")) return "mercadolivre";
-  if (lower.includes("shopee")) return "shopee";
-  if (lower.includes("amazon")) return "amazon";
-  if (lower.includes("magalu") || lower.includes("magazine")) return "magalu";
-  if (lower.includes("americanas") || lower.includes("b2w")) return "americanas";
-  if (lower.includes("nuvem") || lower.includes("nuvemshop")) return "nuvemshop";
-  if (lower.includes("shopify")) return "shopify";
-  return lower;
+function detectarCanalPedido(pedido: { ecommerce?: { nome?: string; nomeMarketplace?: string }; numero_ecommerce?: string }): string | null {
+  return detectarCanal({
+    ecommerceNome: pedido.ecommerce?.nomeMarketplace ?? pedido.ecommerce?.nome ?? null,
+    numeroEcommerce: pedido.numero_ecommerce ?? null,
+  });
 }
 
 async function upsertPedidoLista(empresaId: string, item: TinyPedidoListItem): Promise<string> {
@@ -84,7 +76,7 @@ async function upsertPedidoLista(empresaId: string, item: TinyPedidoListItem): P
   const tinyId = String(p.id);
   const dataPedido = fromTinyDate(p.data_pedido) ?? new Date();
   const valorTotal = parseDecimal(p.valor) ?? new Prisma.Decimal(0);
-  const canal = detectarCanal(p);
+  const canal = detectarCanalPedido(p);
 
   await prisma.pedido.upsert({
     where: { empresaId_tinyId: { empresaId, tinyId } },
@@ -132,7 +124,7 @@ async function persistirDetalhe(empresaId: string, tinyId: string, detalhe: Tiny
   const valorFrete = parseDecimal(detalhe.totais?.total_frete) ?? parseDecimal(detalhe.valor_frete);
   const valorDesconto = parseDecimal(detalhe.totais?.total_desconto) ?? parseDecimal(detalhe.valor_desconto);
   const dataFaturamento = fromTinyDate(detalhe.data_faturamento ?? null);
-  const canal = detectarCanal(detalhe);
+  const canal = detectarCanalPedido(detalhe);
 
   // Atualiza dados do pedido
   await prisma.pedido.update({

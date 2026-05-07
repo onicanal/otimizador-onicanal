@@ -7,6 +7,7 @@ import { formatBRL, formatNumber } from "@/lib/utils";
 import { calcularIntervalo, intervaloAnterior, isoDate, type PeriodoPreset } from "@/lib/periodo";
 import { VendasFilters } from "@/components/vendas/vendas-filters";
 import { LinhaTemporal, PorCanal, PorEmpresa, type LinhaTemporalSerie } from "@/components/vendas/vendas-charts";
+import { ReclassificarCanaisButton } from "@/components/vendas/reclassificar-canais-button";
 
 export const dynamic = "force-dynamic";
 
@@ -302,8 +303,12 @@ export default async function VendasPage({ searchParams }: { searchParams: Searc
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Por canal</CardTitle>
+          <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0">
+            <div>
+              <CardTitle className="text-base">Por canal</CardTitle>
+              <CardDescription>Detecta marketplace pelo padrão do nº do pedido.</CardDescription>
+            </div>
+            <ReclassificarCanaisButton />
           </CardHeader>
           <CardContent>
             <PorCanal data={porCanalUI} />

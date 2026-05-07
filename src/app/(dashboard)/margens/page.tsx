@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { formatBRL, formatNumber, formatPercent } from "@/lib/utils";
 import { calcularIntervalo, type PeriodoPreset } from "@/lib/periodo";
 import { AnaliseFilters } from "@/components/analise/analise-filters";
+import { ProgressoDetalheBanner } from "@/components/analise/progresso-detalhe-banner";
+import { buscarProgressoDetalhe } from "@/server/sync-progress";
 
 export const dynamic = "force-dynamic";
 
@@ -148,11 +150,12 @@ export default async function MargensPage({ searchParams }: { searchParams: Sear
 
   const filtros: Filtros = { inicio: intervalo.inicio, fim: intervalo.fim, empresaId, categoria: categoriaSel };
 
-  const [empresas, categorias, produtosRaw, porCategoria] = await Promise.all([
+  const [empresas, categorias, produtosRaw, porCategoria, progresso] = await Promise.all([
     prisma.empresa.findMany({ where: { ativo: true }, orderBy: { nome: "asc" }, select: { id: true, nome: true, apelido: true, cor: true } }),
     buscarCategorias(),
     buscarProdutosComMargem(filtros),
     buscarMargemPorCategoria(filtros),
+    buscarProgressoDetalhe(intervalo.inicio, intervalo.fim, empresaId),
   ]);
 
   const empresaMap = new Map(empresas.map((e) => [e.id, e]));
@@ -221,6 +224,8 @@ export default async function MargensPage({ searchParams }: { searchParams: Sear
       </div>
 
       <AnaliseFilters empresas={empresas} categorias={categorias} basePath="/margens" />
+
+      <ProgressoDetalheBanner {...progresso} />
 
       {produtos.length === 0 ? (
         <Card>

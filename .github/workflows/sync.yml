@@ -1,0 +1,61 @@
+name: Sync Tiny (Onicanal)
+
+# Mantém o sync rodando sozinho, sem depender do navegador aberto.
+#  - schedule: a cada 4 horas (6x/dia) faz uma drenagem curta da fila.
+#  - workflow_dispatch: botão manual; use minutos=300 pra limpar o atraso
+#    histórico (os ~11 mil pedidos) numa tacada só.
+#
+# Pré-requisito: cadastrar 2 secrets no repositório (Settings > Secrets and
+# variables > Actions):
+#   APP_URL      -> URL de produção do Vercel, ex: https://onicanal.vercel.app
+#   CRON_SECRET  -> o mesmo valor da env CRON_SECRET no Vercel
+
+on:
+  schedule:
+    - cron: "0 */4 * * *"
+  workflow_dispatch:
+    inputs:
+      minutos:
+        description: "Por quantos minutos rodar (use 300 pra limpar o atraso histórico)"
+        required: false
+        default: "20"
+
+concurrency:
+  group: sync-tiny
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - name: Drenar fila de sincronização
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          MINUTOS: ${{ github.event.inputs.minutos || '12' }}
+        run: |
+          set -u
+          if [ -z "${APP_URL}" ] || [ -z "${CRON_SECRET}" ]; then
+            echo "ERRO: configure os secrets APP_URL e CRON_SECRET no repositório."
+            exit 1
+          fi
+          BASE="${APP_URL%/}"
+          FIM=$(( $(date +%s) + (MINUTOS * 60) ))
+          N=0
+          while [ "$(date +%s)" -lt "$FIM" ]; do
+            N=$((N + 1))
+            CODE=$(curl -sS -o /tmp/out.json -w "%{http_code}" --max-time 90 \
+              -H "Authorization: Bearer ${CRON_SECRET}" \
+              "${BASE}/api/cron/sync" || echo "000")
+            echo "[${N}] HTTP ${CODE}"
+            head -c 600 /tmp/out.json 2>/dev/null || true
+            echo
+            if [ "${CODE}" != "200" ]; then
+              echo "Resposta != 200 — aguardando 30s antes de tentar de novo."
+              sleep 30
+            else
+              sleep 3
+            fi
+          done
+          echo "Finalizado: ${N} chamadas ao endpoint de sync."

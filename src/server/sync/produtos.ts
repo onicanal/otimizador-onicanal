@@ -223,11 +223,13 @@ export async function processarChunkProdutos(jobId: string): Promise<{ feito: bo
  * Cria um job de sync de produtos para a empresa.
  */
 export async function iniciarSyncProdutos(empresaId: string): Promise<string> {
-  // Cancela jobs antigos da mesma empresa/tipo que ficaram presos em "running"
-  await prisma.syncJob.updateMany({
+  // Se já existe um job de produtos em andamento, RETOMA ele em vez de recriar
+  // (não perde o checkpoint nem deixa o cron matar um sync em curso).
+  const emAndamento = await prisma.syncJob.findFirst({
     where: { empresaId, tipo: "produtos", status: { in: ["pending", "running"] } },
-    data: { status: "error", finalizadoEm: new Date(), erro: "substituído por novo sync" },
+    orderBy: { iniciadoEm: "desc" },
   });
+  if (emAndamento) return emAndamento.id;
 
   const job = await prisma.syncJob.create({
     data: {

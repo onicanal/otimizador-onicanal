@@ -37,25 +37,31 @@ export async function GET(req: NextRequest) {
     where: { ativo: true, tinyTokenCipher: { not: null } },
   });
 
-  const ontem = new Date();
-  ontem.setDate(ontem.getDate() - 7); // janela móvel de 7 dias
   const hoje = new Date();
+  const inicioDoAno = new Date(hoje.getFullYear(), 0, 1);
 
   for (const empresa of empresas) {
     // Só cria sync de produtos uma vez por semana (domingo)
-    if (new Date().getDay() === 0) {
+    if (hoje.getDay() === 0) {
       try {
         await iniciarSyncProdutos(empresa.id);
-        log.push(`produtos: criado job para ${empresa.nome}`);
+        log.push(`produtos: job garantido para ${empresa.nome}`);
       } catch (e) {
         log.push(`produtos: erro ao criar job para ${empresa.nome}: ${e}`);
       }
     }
 
-    // Pedidos: cria job todo dia
+    // Pedidos: na primeira vez puxa o ano inteiro (atraso histórico); depois
+    // que o primeiro sync completa, passa a janela incremental (últimos dias,
+    // com folga de 3 dias pra capturar pedidos atualizados).
+    const inicioPedidos = empresa.ultimoSyncPedidos
+      ? new Date(empresa.ultimoSyncPedidos.getTime() - 3 * 24 * 60 * 60 * 1000)
+      : inicioDoAno;
     try {
-      await iniciarSyncPedidos(empresa.id, ontem, hoje);
-      log.push(`pedidos: criado job para ${empresa.nome}`);
+      // iniciarSyncPedidos é idempotente: se já houver job em andamento,
+      // retoma; só cria novo quando não há nada pendente.
+      await iniciarSyncPedidos(empresa.id, inicioPedidos, hoje);
+      log.push(`pedidos: job garantido para ${empresa.nome} (desde ${inicioPedidos.toISOString().slice(0, 10)})`);
     } catch (e) {
       log.push(`pedidos: erro ao criar job para ${empresa.nome}: ${e}`);
     }
